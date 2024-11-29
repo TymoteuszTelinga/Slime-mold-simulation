@@ -1,8 +1,13 @@
-#include "iostream"
+#include "Simulation.h"
 
 int main()
 {
-	std::cout << "Hello World\n";
+	ApplicationSpecification spec;
+
+	Simulation* app = new Simulation(spec);
+	app->Run();
+
+	delete app;
 
 	return 0;
 }
