@@ -16,6 +16,7 @@ public:
 
     //Set uniforms
     void SetUniform1i(const std::string& name, int32_t v0);
+    void SetUniform1ui(const std::string& name, uint32_t v0);
 
 private:
     int32_t GetUniformLocation(const std::string& name);

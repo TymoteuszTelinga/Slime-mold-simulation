@@ -14,5 +14,11 @@ public:
 
 private:
 
+	//Debug info
+	float m_FrameTime = 0.0f;
+	float m_CountTime = 0.0f;
+	int m_FPS = 0;
+	int m_Count = 0;
+
 };
 

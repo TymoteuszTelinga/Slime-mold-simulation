@@ -2,6 +2,7 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D Texture;
 
+//Random
 uint rngSeed;
 
 uint PCGHash()
@@ -17,6 +18,7 @@ float rand() //random float from 0 to 1
     return PCGHash() / float(0xFFFFFFFFU);
 }
 
+//Mainfunction
 void main()
 {
     ivec2 id = ivec2(gl_GlobalInvocationID.xy);

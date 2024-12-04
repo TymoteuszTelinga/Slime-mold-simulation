@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Renderer\Buffer.cpp" />
     <ClCompile Include="src\Renderer\Image.cpp" />
     <ClCompile Include="src\Renderer\Program.cpp" />
     <ClCompile Include="src\Renderer\Renderer.cpp" />
@@ -150,6 +151,9 @@
     <ClCompile Include="src\Core\Input.cpp" />
     <ClCompile Include="src\Core\Window.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Renderer\Shader.cpp" />
+    <ClCompile Include="src\Renderer\VertexArray.cpp" />
+    <ClCompile Include="src\Renderer\VertexBuffer.cpp" />
     <ClCompile Include="src\Simulation.cpp" />
     <ClCompile Include="vendor\imgui\imgui.cpp" />
     <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
@@ -161,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Renderer\Image.h" />
+    <ClInclude Include="src\Renderer\Buffer.h" />
     <ClInclude Include="src\Renderer\Program.h" />
     <ClInclude Include="src\Renderer\Renderer.h" />
     <ClInclude Include="src\Core\Application.h" />
@@ -169,6 +174,10 @@
     <ClInclude Include="src\Core\Window.h" />
     <ClInclude Include="src\Events\Event.h" />
     <ClInclude Include="src\Events\WindowEvent.h" />
+    <ClInclude Include="src\Renderer\Shader.h" />
+    <ClInclude Include="src\Renderer\VertexArray.h" />
+    <ClInclude Include="src\Renderer\VertexBuffer.h" />
+    <ClInclude Include="src\Renderer\VertexBufferLayout.h" />
     <ClInclude Include="src\Simulation.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />
     <ClInclude Include="vendor\imgui\imgui.h" />

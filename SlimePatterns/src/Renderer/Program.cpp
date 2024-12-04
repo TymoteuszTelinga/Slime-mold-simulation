@@ -37,6 +37,11 @@ void Program::SetUniform1i(const std::string& name, int32_t v0)
     glUniform1i(GetUniformLocation(name), v0);
 }
 
+void Program::SetUniform1ui(const std::string& name, uint32_t v0)
+{
+    glUniform1ui(GetUniformLocation(name), v0);
+}
+
 int32_t Program::GetUniformLocation(const std::string& name)
 {
     if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())

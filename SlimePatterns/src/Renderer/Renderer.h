@@ -8,4 +8,6 @@ public:
 	static void Resize(int width, int height);
 
 	static void Clear();
+
+	static void DisplayImage();
 };
