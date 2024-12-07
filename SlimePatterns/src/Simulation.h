@@ -12,7 +12,13 @@ public:
 	virtual void OnUpdate(float DeltaTime) override;
 	virtual void OnRender() override;
 
+	void InitSimulation();
+
 private:
+
+	bool bPouse = false;
+	bool bNextFrame = false;
+	bool bVsync = true;
 
 	//Debug info
 	float m_FrameTime = 0.0f;

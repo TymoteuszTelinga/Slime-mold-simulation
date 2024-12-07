@@ -62,7 +62,7 @@ void Application::Run()
 
 		if (!m_Minimized)
 		{
-			int32_t loopcount = 0;
+			/*int32_t loopcount = 0;
 			while (m_DeltaTime > maxUpdateTime)
 			{
 				OnUpdate(maxUpdateTime);
@@ -72,9 +72,10 @@ void Application::Run()
 				{
 					break;
 				}
-			}
+			}*/
 
-			OnUpdate(m_DeltaTime >= maxUpdateTime ? maxUpdateTime : m_DeltaTime);
+			///OnUpdate(m_DeltaTime >= maxUpdateTime ? maxUpdateTime : m_DeltaTime);
+			OnUpdate(m_DeltaTime);
 
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
