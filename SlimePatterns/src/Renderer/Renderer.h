@@ -1,4 +1,6 @@
 #pragma once
+#include "Image.h"
+#include "Core/Base.h"
 
 class Renderer
 {
@@ -9,5 +11,5 @@ public:
 
 	static void Clear();
 
-	static void DisplayImage();
+	static void DisplayImage(const Ref<Image> image);
 };

@@ -22,6 +22,11 @@ struct RendererData
 	//Screan Quad
 	Ref<VertexArray> QuadVertexArray;
 	Ref<VertexBuffer> QuadVertexBuffer;
+
+	//Dispaly data
+	uint32_t Width;
+	uint32_t Height;
+	float DisplayRatio;
 };
 
 static RendererData s_Data;
@@ -41,7 +46,7 @@ void Renderer::Init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glClearColor(0.0, 0.0, 0.0, 1.f);
+	glClearColor(0.13/2, 0.18/2, 0.24/2, 1.f);
 
 	float quadVertices[] = {
 		// positions   // texCoords
@@ -67,6 +72,10 @@ void Renderer::Init()
 
 void Renderer::Resize(int width, int height)
 {
+	s_Data.Width = width;
+	s_Data.Height = height;
+	s_Data.DisplayRatio = (float)width / (float)height;
+
 	glViewport(0, 0, width, height);
 }
 
@@ -75,9 +84,23 @@ void Renderer::Clear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::DisplayImage()
+void Renderer::DisplayImage(const Ref<Image> image)
 {
+	image->Bind(0);
+	float ImageRatio = (float)image->GetWidth() / (float)image->GetHeight();
+
+	float xScale = 1.0f;
+	float yScale = 1.0f;
+	if (ImageRatio > s_Data.DisplayRatio) 
+	{
+		yScale = s_Data.DisplayRatio / ImageRatio;
+	}
+	else {
+		xScale = ImageRatio / s_Data.DisplayRatio;
+	}
+
 	ScreenShder->Bind();
+	ScreenShder->SetUniform2f("Scale", xScale, yScale);
 	s_Data.QuadVertexArray->Bind();
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

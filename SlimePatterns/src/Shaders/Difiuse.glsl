@@ -6,15 +6,12 @@ layout(rgba32f, binding = 1) uniform image2D resoult;
 layout(std140, binding = 1) buffer Parameters
 {
     float TimeStep;
+    int Width;
+    int Height;
     //Pheromons params
     int KernelSize;
     float EvaporationFactor;
-    //Agent params
-    float SensorAngle;
-    float SensorOffset;
-    int SensorSize;
-    float AgentSpeed;
-    float AgentRotation;
+    float DifiusonFactor;
 };
 
 void main()
@@ -22,16 +19,19 @@ void main()
     ivec2 id = ivec2(gl_GlobalInvocationID.xy);
 
     vec4 sum = vec4(0.0);
-    for(int xoff = -1; xoff <= 1; xoff++)
+    for(int xoff = -KernelSize; xoff <= KernelSize; xoff++)
     {
-        for(int yoff = -1; yoff <= 1; yoff++)
+        for(int yoff = -KernelSize; yoff <= KernelSize; yoff++)
         {
             ivec2 offset = ivec2(xoff,yoff);
             sum += imageLoad(orginal, id + offset);
         }
     }
+    float total = (KernelSize * 2.f + 1.f) * (KernelSize * 2.f + 1.f);
 
-    vec4 blureResult = sum / 9;
+    vec4 blureResult = sum / total;
+    vec4 normal = imageLoad(orginal, id);
 
-    imageStore(resoult, id, blureResult);
+    vec4 pheromons = mix(normal, blureResult, DifiusonFactor * TimeStep);
+    imageStore(resoult, id, pheromons);
 }

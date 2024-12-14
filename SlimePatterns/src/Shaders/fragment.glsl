@@ -8,6 +8,7 @@ layout(binding = 0) uniform sampler2D uTexture;
 
 void main()
 {
-    vec4 texColor = texture(uTexture, TexUV);
-    color = vec4(texColor);
+    vec3 texColor = texture(uTexture, TexUV).xyz;
+    vec3 total = vec3(dot(texColor, vec3(1.f))/3.f);
+    color = vec4(total, 1.f);
 }

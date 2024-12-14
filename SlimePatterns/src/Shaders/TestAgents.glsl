@@ -1,18 +1,35 @@
 #version 460 core
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D Texture;
 
+struct Agent
+{
+    vec2 pos;
+    float angle;
+    int SpeciesIndex;
+    ivec4 mask;
+};
 
-//Move to uniform buffer
-const int sensorSize = 1;//how big area of sensor is (haf size)
+uniform uint Agents;
+layout(std430, binding = 0) buffer bAgent
+{
+    Agent agents[];
+};
 
+//General Parameters
 layout(std140, binding = 1) buffer Parameters
 {
     float TimeStep;
+    int Width;
+    int Height;
     //Pheromons params
     int KernelSize;
     float EvaporationFactor;
-    //Agent params
+    float DifiusonFactor;
+};
+
+struct SpeciesSettings
+{
     float SensorAngle;
     float SensorOffset;
     int SensorSize;
@@ -20,17 +37,9 @@ layout(std140, binding = 1) buffer Parameters
     float AgentRotation;
 };
 
-struct Agent
+layout(std430, binding = 2) buffer bSpecies
 {
-    vec2 pos;
-    float angle;
-    float w;
-};
-
-uniform uint Agents;
-layout(std430, binding = 0) buffer bAgent
-{
-    Agent agents[];
+    SpeciesSettings Species[3];
 };
 
 //Random
@@ -50,20 +59,22 @@ float rand() //random float from 0 to 1
 }
 
 //Helper functions
-float sense(Agent agent, float sensorAngleOffset) {
+float sense(in Agent agent, SpeciesSettings settings, float sensorAngleOffset)
+{
     float sensorAngle = agent.angle + sensorAngleOffset;
     vec2 sensorDir = vec2(cos(sensorAngle), sin(sensorAngle));
 
-    vec2 sensorPos = agent.pos + sensorDir * SensorOffset;
+    ivec2 sensorPos = ivec2(agent.pos + sensorDir * settings.SensorOffset);
 
     float sum = 0;
+    vec4 senseWeight = vec4(1.f); /*vec4(agent.mask * 2.f - 1.f);*/
 
-    ivec4 senseWeight = ivec4(1) * 2 - 1;
-
-    for (int xoff = -sensorSize; xoff <= sensorSize; xoff++) {
-        for (int yoff = -sensorSize; yoff <= sensorSize; yoff++) {
+    for (int xoff = -settings.SensorSize; xoff <= settings.SensorSize; xoff++)
+    {
+        for (int yoff = -settings.SensorSize; yoff <= settings.SensorSize; yoff++)
+        {
             ivec2 offset = ivec2(xoff, yoff);
-            sum += dot(senseWeight, imageLoad(Texture, ivec2(sensorPos) + offset));
+            sum += dot(senseWeight, imageLoad(Texture, sensorPos + offset));
         }
     }
 
@@ -80,65 +91,69 @@ void main()
         return;
     }
 
-    float width = imageSize(Texture).x;
-    float height = imageSize(Texture).y;
-
     // collect sensor data
-    float weightForward = sense(agents[id], 0);
-    float weightLeft = sense(agents[id], SensorAngle);
-    float weightRight = sense(agents[id], -SensorAngle);
+    Agent agent = agents[id];
+    SpeciesSettings settings = Species[agent.SpeciesIndex];
+    float weightForward = sense(agent, settings, 0);
+    float weightLeft = sense(agent, settings, settings.SensorAngle);
+    float weightRight = sense(agent, settings, -settings.SensorAngle);
 
-    float randomSteerStrength = rand();
 
     // Continue in same direction
-    if (weightForward > weightLeft && weightForward > weightRight) {
-        agents[id].angle += 0;
+    if (weightForward > weightLeft && weightForward > weightRight)
+    {
+        agent.angle += 0;
     }
-    else if (weightForward < weightLeft && weightForward < weightRight) {
-        agents[id].angle += (randomSteerStrength - 0.5) * 2 * AgentRotation * TimeStep;
+    else if (weightForward < weightLeft && weightForward < weightRight) 
+    {
+        agent.angle += (rand() - 0.5) * 2 * settings.AgentRotation * TimeStep;
     }
     // Turn right
-    else if (weightRight > weightLeft) {
-        agents[id].angle -= randomSteerStrength * AgentRotation * TimeStep;
+    else if (weightRight > weightLeft) 
+    {
+        agent.angle -= settings.AgentRotation * TimeStep;
     }
     // Turn left
-    else if (weightLeft > weightRight) {
-        agents[id].angle += randomSteerStrength * AgentRotation * TimeStep;
+    else if (weightLeft > weightRight) 
+    {
+        agent.angle += settings.AgentRotation * TimeStep;
     }
 
 
     //Move In Direction;
-    vec2 dir = vec2(cos(agents[id].angle), sin(agents[id].angle));
-    vec2 agentPosition = agents[id].pos + (dir * AgentSpeed * TimeStep);
+    vec2 dir = vec2(cos(agent.angle), sin(agent.angle));
+    vec2 agentPosition = agent.pos + (dir * settings.AgentSpeed * TimeStep);
 
     //left side collision
     if (agentPosition.x <= 0)
     {
-        agents[id].angle = rand() * 3.14f - (3.14f/2.f);
+        agent.angle = rand() * 3.14f - (3.14f/2.f);
     }
     //right side collision
-    if (agentPosition.x >= width)
+    if (agentPosition.x >= Width)
     {
-        agents[id].angle = rand() * 3.14f + (3.14f / 2.f);
+        agent.angle = rand() * 3.14f + (3.14f / 2.f);
     }
     //bottom side collision
     if (agentPosition.y <= 0)
     {
-        agents[id].angle = rand() * 3.14f;
+        agent.angle = rand() * 3.14f;
     }
     //top side collision
-    if (agentPosition.y >= height)
+    if (agentPosition.y >= Height)
     {
-        agents[id].angle = rand() * 3.14f + 3.14f;
+        agent.angle = rand() * 3.14f + 3.14f;
     }
 
     //set agent position inside image box
-    agentPosition.x = min(width - 0.01, max(0, agentPosition.x));
-    agentPosition.y = min(height - 0.01, max(0, agentPosition.y));
+    agentPosition.x = min(Width - 0.01, max(0, agentPosition.x));
+    agentPosition.y = min(Height - 0.01, max(0, agentPosition.y));
 
     //update agent position
-    agents[id].pos = agentPosition;
+    agent.pos = agentPosition;
+    agents[id] = agent;
 
-    vec4 color = vec4(1.0);
-    imageStore(Texture, ivec2(agents[id].pos), color);
+    vec4 old = imageLoad(Texture, ivec2(agents[id].pos));
+    vec4 deposit = min(vec4(1.f), old + vec4(agent.mask) * 10.f * TimeStep);
+    imageStore(Texture, ivec2(agents[id].pos), deposit);
 }
