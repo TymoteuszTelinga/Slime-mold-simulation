@@ -17,3 +17,17 @@ constexpr Ref<T> CreateRef(Args&& ... args)
 {
 	return std::make_shared<T>(std::forward<Args>(args)...);
 }
+
+struct vec3
+{
+	float r, g, b;
+
+	vec3(float R, float G, float B)
+		: r(R), g(G), b(B) {};
+
+	vec3(float v) 
+		: r(v), g(v), b(v) {};
+
+	vec3() 
+		: vec3(1.f) {};
+};

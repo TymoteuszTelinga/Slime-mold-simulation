@@ -19,6 +19,8 @@ public:
 
 	static void SwapBinding(Image& I1, Image&I2);
 
+	static bool SaveImage(const Image& image, const std::string& savePath);
+
 private:
 
 	void Invalidate();

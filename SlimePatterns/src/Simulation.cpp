@@ -11,8 +11,10 @@
 static Ref<Image> sImage;
 static Ref<Image> sImageDisplay;
 //Agenst arrays
-static uint32_t NumberOfAgents = 10000;
+static uint32_t NumberOfAgents = 500000;
 static uint32_t AgentsSize = NumberOfAgents;
+static int32_t sNumberOfSpecies = 3;
+static int32_t ActiveSpecies = sNumberOfSpecies;
 static Scope<Buffer> sBuffer;
 //Steps
 static Scope<Program> sProgram;
@@ -21,6 +23,14 @@ static Scope<Program> sDifiuse;
 //Uniform Buffer
 static Scope<Buffer> sParamsBuffer;
 static Scope<Buffer> sSpeciesBuffer;
+
+enum class ESpawnMetod : int
+{
+	Circle = 0,
+	Full = 1
+};
+
+static ESpawnMetod sSpawnMetod = ESpawnMetod::Circle;
 
 struct Agent
 {
@@ -45,8 +55,8 @@ static SpeciesSettings sSpecies[3];
 struct SimulationParameters
 {
 	float TimeStep = 1.f;
-	int32_t Width = 1920;
-	int32_t Height = 1080;
+	int32_t Width = 800;
+	int32_t Height = 400;
 	//Pheromons params
 	int32_t KernelSize = 1; //Haf size
 	float EvaporationFactor = 0.1f;
@@ -72,23 +82,39 @@ float DegreesToRadian(float angle)
 
 void InitAgents(Agent* agents)
 {
+	const float R = std::min(sImage->GetWidth(), sImage->GetHeight()) / 2.f;
+
 	for (uint32_t i = 0; i < AgentsSize; i++)
 	{
-		//Random
+
+		switch (sSpawnMetod)
+		{
+		case ESpawnMetod::Circle:
+			{
+			float r = R * std::sqrt(randomF());
+			float theta = randomF() * 2 * 3.14;
+			agents[i].x = sImage->GetWidth() / 2.f + r * std::cos(theta);
+			agents[i].y = sImage->GetHeight() / 2.f + r * std::sin(theta);
+			agents[i].angle = randomF() * 2 * 3.14;
+			}
+			break;
+		case ESpawnMetod::Full:
+			{
+			agents[i].x = rand() % sImage->GetWidth();
+			agents[i].y = rand() % sImage->GetHeight();
+			agents[i].angle = randomF() * 3.14 * 2.f;
+			}
+			break;
+		default:
+			break;
+		}
 		
-		agents[i].x = rand() % sImage->GetWidth();
-		agents[i].y = rand() % sImage->GetHeight();
-		agents[i].angle = randomF() * 3.14 * 2.f;
 		
 
 		//circle
-		//float R = std::min(sImage->GetWidth(), sImage->GetHeight()) / 2.f;
-		//float r = R * std::sqrt(randomF());
-		//float theta = randomF() * 2 * 3.14;
-		//agents[i].x = sImage->GetWidth() / 2.f + r * std::cos(theta);
-		//agents[i].y = sImage->GetHeight() / 2.f + r * std::sin(theta);
-		//agents[i].angle = randomF() * 2 * 3.14;
-		switch (rand() % 3)
+		
+		
+		switch (rand() % ActiveSpecies)
 		{
 		case 0:
 			agents[i].r = 1;
@@ -136,7 +162,6 @@ Simulation::Simulation(const ApplicationSpecification& spec)
 	InitSimulation();
 
 	Renderer::Resize(spec.Width, spec.Height);
-	//Renderer::Resize(600, 600);
 
 	m_Timer = CreateScope<Timer>();
 }
@@ -164,6 +189,7 @@ void Simulation::OnUpdate(float DeltaTime)
 		return;
 	}
 	bNextFrame = false;
+
 	//sParameters.TimeStep = DeltaTime;
 	//sParamsBuffer->SetData(&sParameters, sizeof(SimulationParameters));
 
@@ -189,8 +215,8 @@ void Simulation::OnUpdate(float DeltaTime)
 
 void Simulation::OnRender()
 {
-	Renderer::DisplayImage(sImage);
-
+	static bool bGrayScale = true;
+	Renderer::DisplayImage(sImage, ImageMask, bGrayScale);
 
 	ImGui::Begin("Controls");
 
@@ -212,19 +238,38 @@ void Simulation::OnRender()
 	if (ImGui::TreeNode("Simulation parameters"))
 	{
 
+		ImGui::PushItemWidth(70);
+
 		ImGui::Text("Simulation space: %dx%d", sImage->GetWidth(), sImage->GetHeight());
 		ImGui::Text("Agents: %d", AgentsSize);
+		ImGui::Text("Species: %d", ActiveSpecies);
+		static uint32_t ImageWidth = sImage->GetWidth();
+		static uint32_t ImageHeight = sImage->GetHeight();
+		ImGui::DragScalar("##Width", ImGuiDataType_U32, &ImageWidth);
+		ImGui::SameLine();
+		ImGui::DragScalar("Size", ImGuiDataType_U32, &ImageHeight);
+
 		ImGui::DragScalar("Agents", ImGuiDataType_U32, &NumberOfAgents, 1000);
+		ImGui::DragInt("Species", &sNumberOfSpecies, 0.2, 1, 3);
+
+		static int CurentMetod = static_cast<int>(sSpawnMetod);
+		if (ImGui::Combo("Spawn metod", &CurentMetod, "Circle\0Full\0\0"))
+		{
+			sSpawnMetod = static_cast<ESpawnMetod>(CurentMetod);
+		}
+
+
 		if (ImGui::Button("Apply"))
 		{
 			AgentsSize = NumberOfAgents;
+			ActiveSpecies = sNumberOfSpecies;
+			sParameters.Width = ImageWidth;
+			sParameters.Height = ImageHeight;
 			InitSimulation();
 		}
 
-		ImGui::PushItemWidth(60);
 		ImGui::Separator();
 		bool bParametrChange = false;
-		//ImGui::DragScalar("Number of agents", ImGuiDataType_U32, )
 		bParametrChange |= ImGui::DragInt("Kernel size", &sParameters.KernelSize, 0.5,0, 10);
 		bParametrChange |= ImGui::DragFloat("Evaporation factor", &sParameters.EvaporationFactor, 0.01, 0.f, 1.f, "%.2f");
 		bParametrChange |= ImGui::DragFloat("Difiuson factor", &sParameters.DifiusonFactor, 0.01, 0.f, 1.f, "%.2f");
@@ -245,7 +290,7 @@ void Simulation::OnRender()
 		ImGui::SameLine();
 		if (ImGui::Button(">"))
 		{
-			SpeciesIndex = std::min(++SpeciesIndex, 2);
+			SpeciesIndex = std::min(++SpeciesIndex, ActiveSpecies-1);
 		}
 		SpeciesSettings& Settings = sSpecies[SpeciesIndex];
 		float SensorDegrees = RadianToDegrees(Settings.SensorAngle);
@@ -283,6 +328,20 @@ void Simulation::OnRender()
 			bNextFrame = true;
 		}
 
+		ImGui::Checkbox("GrayScale", &bGrayScale);
+		static bool r = true, g = true, b = true;
+		if (!bGrayScale)
+		{
+			ImGui::Text("Slime msak");
+			ImGui::Checkbox("Species 1", &r);
+			ImGui::Checkbox("Species 2", &g);
+			ImGui::Checkbox("Species 3", &b);
+			ImageMask = vec3(r, g, b);
+		}
+
+		static vec3 color;
+		ImGui::ColorEdit3("SlimeColor", &color.r);
+
 		ImGui::TreePop();
 	}
 	
@@ -292,6 +351,8 @@ void Simulation::OnRender()
 
 void Simulation::InitSimulation()
 {
+	sParamsBuffer->SetData(&sParameters, sizeof(SimulationParameters));
+
 	sImage->Resize(sParameters.Width, sParameters.Height);
 	sImageDisplay->Resize(sParameters.Width, sParameters.Height);
 

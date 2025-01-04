@@ -11,5 +11,5 @@ public:
 
 	static void Clear();
 
-	static void DisplayImage(const Ref<Image> image);
+	static void DisplayImage(const Ref<Image> image, const vec3& mask, bool useGrayScale);
 };
