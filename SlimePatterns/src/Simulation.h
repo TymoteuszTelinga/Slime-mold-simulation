@@ -15,7 +15,7 @@ public:
 
 private:
 
-	void InitSimulation(const float* EnvironmentData);
+	void InitSimulation(float* EnvironmentData);
 	void ParseImage(float* EnvironmentData);
 
 	void InitAgents();

@@ -230,7 +230,6 @@ void Simulation::OnRender()
 				sParameters.Width = width;
 				sParameters.Height = height;
 
-				ParseImage(PixelBuffer);
 				InitSimulation(PixelBuffer);
 
 				stbi_image_free(PixelBuffer);
@@ -355,8 +354,10 @@ void Simulation::OnRender()
 
 }
 
-void Simulation::InitSimulation(const float* EnvironmentData)
+void Simulation::InitSimulation(float* EnvironmentData)
 {
+	ParseImage(EnvironmentData);
+
 	sParamsBuffer->SetData(&sParameters, sizeof(SimulationParameters));
 
 	sImage->Resize(sParameters.Width, sParameters.Height);
@@ -381,6 +382,7 @@ void Simulation::ParseImage(float* EnvironmentData)
 	ValidPositions.clear();
 	if (EnvironmentData == nullptr)
 	{
+		sSpawnMetod = ESpawnMetod::Circle;
 		return;
 	}
 
@@ -426,8 +428,10 @@ void Simulation::ParseImage(float* EnvironmentData)
 	}
 
 	std::sort(ValidPositions.begin(), ValidPositions.end(), ComperPositions);
-
-	std::cout << "Size: " << ValidPositions.size() << std::endl;
+	if (ValidPositions.size() <= 0)
+	{
+		sSpawnMetod = ESpawnMetod::Circle;
+	}
 }
 
 void Simulation::InitAgents()
