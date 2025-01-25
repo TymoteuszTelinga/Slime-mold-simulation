@@ -31,3 +31,27 @@ struct vec3
 	vec3() 
 		: vec3(1.f) {};
 };
+
+struct vec4
+{
+	float v[4];
+
+	vec4(float R, float G, float B, float A)
+	{
+		v[0] = R;
+		v[1] = G;
+		v[2] = B;
+		v[3] = A;
+	};
+
+	vec4(float V)
+	{
+		v[0] = V;
+		v[1] = V;
+		v[2] = V;
+		v[3] = V;
+	};
+
+	vec4()
+		: vec4(1.f) {};
+};

@@ -13,7 +13,12 @@ public:
 	virtual void OnUpdate(float DeltaTime) override;
 	virtual void OnRender() override;
 
-	void InitSimulation();
+private:
+
+	void InitSimulation(const float* EnvironmentData);
+	void ParseImage(float* EnvironmentData);
+
+	void InitAgents();
 
 private:
 
@@ -21,6 +26,11 @@ private:
 	bool bPouse = false;
 	bool bNextFrame = false;
 	bool bVsync = true;
+
+	std::string m_EnvironmentPath;
+
+	std::uint32_t m_S1Points, m_S2Points, m_S3Points;
+	std::vector<vec3> ValidPositions;
 
 	//Debug info
 	float m_FrameTime = 0.0f;

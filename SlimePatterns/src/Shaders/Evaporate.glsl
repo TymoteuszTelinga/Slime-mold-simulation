@@ -20,6 +20,7 @@ void main()
 
     vec4 orginal = imageLoad(Texture, id);
     orginal = max(vec4(0), orginal - orginal * EvaporationFactor * TimeStep);
+    //orginal = max(vec4(0), orginal * (1.f-EvaporationFactor) * TimeStep);
 
     imageStore(Texture, id, orginal);
 }

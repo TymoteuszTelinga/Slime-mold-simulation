@@ -8,10 +8,16 @@ static float clamp(float val)
 	return std::min(std::max(0.f, val), 1.f);
 }
 
-Image::Image(uint32_t Width, uint32_t Height, uint32_t Binding)
+Image::Image(uint32_t Width, uint32_t Height, uint32_t Binding, float* data)
 	:m_Width(Width), m_Height(Height), m_RendererID(0), m_Binding(Binding)
 {
 	Invalidate();
+
+	if (data)
+	{
+		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_FLOAT, data);
+	}
+
 }
 
 Image::~Image()
@@ -30,7 +36,7 @@ void Image::UnBind() const
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Image::Resize(uint32_t Width, uint32_t Height)
+void Image::Resize(uint32_t Width, uint32_t Height, const float* data)
 {
 	if (Width == 0 || Height == 0)
 	{
@@ -41,6 +47,11 @@ void Image::Resize(uint32_t Width, uint32_t Height)
 	m_Height = Height;
 
 	Invalidate();
+
+	if (data)
+	{
+		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_FLOAT, data);
+	}
 }
 
 void Image::SwapBinding(Image& I1, Image& I2)

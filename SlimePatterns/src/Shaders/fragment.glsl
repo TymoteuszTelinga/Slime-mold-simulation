@@ -5,6 +5,7 @@ layout(location = 0) out vec4 color;
 in vec2 TexUV;
 
 layout(binding = 0) uniform sampler2D uTexture;
+layout(binding = 1) uniform sampler2D uBoundry;
 
 uniform vec3 Mask;
 uniform bool GrayScale;
@@ -65,14 +66,16 @@ vec3 spectral_bruton(float w)
 
 vec3 gradient(float value)
 {
-    vec3 color1 = vec3(0.098, 0.094, 0.090);
+    //vec3 color1 = vec3(0.098, 0.094, 0.090);
+    vec3 color1 = vec3(0.06, 0.06, 0.06);
     vec3 color2 = vec3(0.470, 0.352, 0.274);
     vec3 color3 = vec3(0.509, 0.094, 0.090);
     vec3 color4 = vec3(0.980, 0.701, 0.392);
     vec3 color5 = vec3(0.168, 0.254, 0.384);
     vec3 color6 = vec3(0.043, 0.431, 0.309);
     vec3 color7 = vec3(0.588, 0.431, 0.309);
-    vec3 color8 = vec3(1, 1, 1);
+    vec3 color8 = vec3(0.588, 0.431, 0.309);
+    /*vec3 color8 = vec3(1, 1, 1);*/
 
     vec3 col;
     if (value < 0.03) {
@@ -124,6 +127,8 @@ vec3 gradient(float value)
 void main()
 {
     vec3 texColor = texture(uTexture, TexUV).xyz;
+    float boundry = texture(uBoundry, TexUV).r;
+
     vec3 total = vec3(0.f);
     if (GrayScale)
     {
@@ -131,11 +136,19 @@ void main()
 		//w = w * 300.f + 400.f;
 		total = w * vec3(0.1, 0.6, 0.3);//spectral_bruton(w);
         total = gradient(w);
+        //total = vec3(w);
 
     }
     else
     {
         total = texColor * Mask;
     }
+
+  /*  if (dot(texColor, vec3(1.f)) > 0)
+    {
+        total = vec3(1);
+    }*/
+
+    total = mix(total, vec3(1.f), boundry);
     color = vec4(total, 1.f);
 }

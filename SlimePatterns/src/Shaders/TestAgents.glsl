@@ -1,6 +1,7 @@
 #version 460 core
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D Texture;
+layout(rgba32f, binding = 2) uniform image2D Boundry;
 
 struct Agent
 {
@@ -30,11 +31,14 @@ layout(std140, binding = 1) buffer Parameters
 
 struct SpeciesSettings
 {
+    vec4 SpeciesMask;
     float SensorAngle;
     float SensorOffset;
     int SensorSize;
     float AgentSpeed;
     float AgentRotation;
+    float Deposit;
+    vec2 _pading;
 };
 
 layout(std430, binding = 2) buffer bSpecies
@@ -59,7 +63,7 @@ float rand() //random float from 0 to 1
 }
 
 //Helper functions
-float sense(in Agent agent, SpeciesSettings settings, float sensorAngleOffset)
+float sense(in Agent agent, in SpeciesSettings settings, float sensorAngleOffset)
 {
     float sensorAngle = agent.angle + sensorAngleOffset;
     vec2 sensorDir = vec2(cos(sensorAngle), sin(sensorAngle));
@@ -67,7 +71,7 @@ float sense(in Agent agent, SpeciesSettings settings, float sensorAngleOffset)
     ivec2 sensorPos = ivec2(agent.pos + sensorDir * settings.SensorOffset);
 
     float sum = 0;
-    vec4 senseWeight = vec4(1.f); /*vec4(agent.mask * 2.f - 1.f);*/
+    vec4 senseWeight = settings.SpeciesMask; /*vec4(agent.mask * 2.f - 1.f);*/
 
     for (int xoff = -settings.SensorSize; xoff <= settings.SensorSize; xoff++)
     {
@@ -124,6 +128,9 @@ void main()
     vec2 dir = vec2(cos(agent.angle), sin(agent.angle));
     vec2 agentPosition = agent.pos + (dir * settings.AgentSpeed * TimeStep);
 
+    
+
+
     //left side collision
     if (agentPosition.x <= 0)
     {
@@ -146,14 +153,22 @@ void main()
     }
 
     //set agent position inside image box
-    agentPosition.x = min(Width - 0.01, max(0, agentPosition.x));
-    agentPosition.y = min(Height - 0.01, max(0, agentPosition.y));
+    agentPosition.x = min(Width - 0.01, max(0.01, agentPosition.x));
+    agentPosition.y = min(Height - 0.01, max(0.01, agentPosition.y));
+
+    float IsWall = imageLoad(Boundry, ivec2(agentPosition)).r;
+    if (IsWall > 0)
+    {
+        agentPosition = agent.pos;//UnDo move;
+        agent.angle = rand() * 3.14f * 2f; //New random rotation;
+    }
 
     //update agent position
     agent.pos = agentPosition;
     agents[id] = agent;
 
     vec4 old = imageLoad(Texture, ivec2(agents[id].pos));
-    vec4 deposit = min(vec4(1.f), old + vec4(agent.mask) * 10.f * TimeStep);
+    vec4 deposit = min(vec4(1.f), old + vec4(agent.mask) * settings.Deposit * TimeStep);
+    //vec4 deposit = old + vec4(agent.mask) * 1.f * TimeStep;
     imageStore(Texture, ivec2(agents[id].pos), deposit);
 }

@@ -5,13 +5,13 @@
 class Image
 {
 public:
-	Image(uint32_t Width, uint32_t Height, uint32_t Binding = 0);
+	Image(uint32_t Width, uint32_t Height, uint32_t Binding = 0, float* data = nullptr);
 	~Image();
 
 	void Bind(uint32_t Slot = 0) const;
 	void UnBind() const;
 
-	void Resize(uint32_t Width, uint32_t Height);
+	void Resize(uint32_t Width, uint32_t Height, const float* data = nullptr);
 
 	inline uint32_t GetRendererID() const { return m_RendererID; };
 	inline uint32_t GetWidth() const { return m_Width; };
