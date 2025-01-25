@@ -165,6 +165,7 @@
     <ClCompile Include="vendor\imgui\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
     <ClCompile Include="vendor\stbImage\stb_image.cpp" />
+    <ClCompile Include="vendor\stbImage\stb_image_write.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\FileDialog.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="vendor\imgui\imstb_textedit.h" />
     <ClInclude Include="vendor\imgui\imstb_truetype.h" />
     <ClInclude Include="vendor\stbImage\stb_image.h" />
+    <ClInclude Include="vendor\stbImage\stb_image_write.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

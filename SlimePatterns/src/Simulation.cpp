@@ -10,6 +10,7 @@
 #include "Core/FileDialog.h"
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 #include <iostream>
 #include <algorithm>
 
@@ -233,6 +234,7 @@ void Simulation::OnRender()
 				InitSimulation(PixelBuffer);
 
 				stbi_image_free(PixelBuffer);
+
 			}
 		}
 
@@ -346,6 +348,16 @@ void Simulation::OnRender()
 
 		static vec3 color;
 		ImGui::ColorEdit3("SlimeColor", &color.r);
+
+		if (ImGui::Button("Save image"))
+		{
+			std::string path = FileDialog::SaveFile("Image (*.bmp)\0*.bmp\0");
+			if (!path.empty())
+			{
+				Image::SaveImage(*sImage.get(), path);
+			}
+
+		}
 
 		ImGui::TreePop();
 	}

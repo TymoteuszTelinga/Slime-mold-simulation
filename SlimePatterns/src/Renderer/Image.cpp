@@ -67,7 +67,10 @@ bool Image::SaveImage(const Image& image, const std::string& savePath)
 {
 	float* Pixels = new float[image.m_Width * image.m_Height * 4];
 
-	glGetTextureImage(image.m_RendererID, 0, GL_RGBA, GL_FLOAT, image.m_Width * image.m_Height * 4, Pixels);
+	glBindTexture(GL_TEXTURE_2D, image.m_RendererID);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, Pixels);
+
+	//glGetTextureImage(image.m_RendererID, 0, GL_RGBA, GL_FLOAT, image.m_Width * image.m_Height * 5, Pixels);
 
 	const uint8_t PaddingSize = (4 - (3 * image.m_Width) % 4) % 4;
 	const uint32_t PixelArraySize = image.m_Width * image.m_Height * 3 + PaddingSize * image.m_Height;
