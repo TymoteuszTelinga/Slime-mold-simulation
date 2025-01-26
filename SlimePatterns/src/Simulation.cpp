@@ -82,7 +82,7 @@ static SpeciesSettings sSpecies[3];
 struct SimulationParameters
 {
 	vec4 ActiveSpeciesMask = vec4(1.f);
-	int RandSeed = 0;
+	int32_t RandSeed = 0;
 	float TimeStep = 1.f;
 	int32_t Width = 400;
 	int32_t Height = 400;
@@ -259,14 +259,14 @@ void Simulation::OnUpdate(float DeltaTime)
 	//m_Timer->Clear();
 	//Difiusion
 	sDifiuse->Bind();
-	sDifiuse->Dispatch(sImage->GetWidth() / 8, sImage->GetHeight() / 8);
+	sDifiuse->Dispatch(sImage->GetWidth() / 8 + 1, sImage->GetHeight() / 8 + 1);
 	m_DifiuseTime = m_Timer->ElapsedMiliseconds();
 	//swap images
 	Image::SwapBinding(*sImage.get(), *sImageDisplay.get());
 	//Evaporation
 	m_Timer->Clear();
 	sEvaporate->Bind();
-	sEvaporate->Dispatch(sImage->GetWidth() / 8, sImage->GetHeight() / 8);
+	sEvaporate->Dispatch(sImage->GetWidth() / 8 + 1, sImage->GetHeight() / 8 + 1);
 	m_EvaporateTime = m_Timer->ElapsedMiliseconds();
 
 }
