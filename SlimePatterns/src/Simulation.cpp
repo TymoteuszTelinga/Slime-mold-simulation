@@ -94,6 +94,24 @@ struct SimulationParameters
 
 static SimulationParameters sParameters;
 
+static float clamp(float val)
+{
+	return std::min(std::max(0.f, val), 1.f);
+}
+
+uint32_t nLehmer = 0;
+const uint32_t lehmerMax = std::numeric_limits<uint32_t>::max();
+uint32_t lehmer32()
+{
+	nLehmer += 0xe120fc15;
+	uint64_t tmp;
+	tmp = (uint64_t)nLehmer * 0x4a39b70d;
+	uint32_t m1 = (tmp >> 32) ^ tmp;
+	tmp = (uint64_t)m1 * 0x12fad5c9;
+	uint32_t m2 = (tmp >> 32) ^ tmp;
+	return m2;
+}
+
 float randomF()
 {
 	return (float)rand() / (float)RAND_MAX;
@@ -102,7 +120,7 @@ float randomF()
 uint32_t randomRange(uint32_t min, uint32_t max)
 {
 	const uint32_t range = max - min;
-	return  rand() % range + min;
+	return  lehmer32() % range + min;
 }
 
 float RadianToDegrees(float angle)
@@ -454,7 +472,7 @@ void Simulation::OnRender()
 			ImGui::PushItemWidth(160);
 			static int CurentGradient = 0;
 			std::string CurentName = gradients[CurentGradient].name;
-			if (ImGui::BeginCombo("combo 1", CurentName.c_str()))
+			if (ImGui::BeginCombo("Color", CurentName.c_str()))
 			{
 				for (int n = 0; n < 12; n++)
 				{
@@ -544,7 +562,7 @@ void Simulation::ParseImage(float* EnvironmentData)
 		{
 			//uint8_t r = (*(pixel)) * 255;
 			//uint8_t g = *(pixel + 1) * 255;
-			uint8_t b = *(pixel + 2) * 255;
+			uint8_t b = clamp(*(pixel + 2)) * 255.f;
 			// 1 1 1 11111
 			// 1 0 0 00000 - species 1 (128)
 			// 0 1 0 00000 - species 2 ( 64)
@@ -561,12 +579,12 @@ void Simulation::ParseImage(float* EnvironmentData)
 				}
 				if (b & uint8_t(64))
 				{
-					ValidPositions.push_back(vec3(x, y, 2));
+					ValidPositions.push_back(vec3(x, y, 1));
 					m_S2Points++;
 				}
 				if (b & uint8_t(32))
 				{
-					ValidPositions.push_back(vec3(x, y, 3));
+					ValidPositions.push_back(vec3(x, y, 2));
 					m_S3Points++;
 				}
 			}

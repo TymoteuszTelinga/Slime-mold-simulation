@@ -46,7 +46,8 @@ void Renderer::Init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glClearColor(0.13/2, 0.18/2, 0.24/2, 1.f);
+	//glClearColor(0.13/2, 0.18/2, 0.24/2, 1.f);
+	glClearColor(0, 0, 0, 1.f);
 
 	float quadVertices[] = {
 		// positions   // texCoords
