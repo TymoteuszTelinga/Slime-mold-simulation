@@ -6,6 +6,7 @@
 #include "Renderer/Program.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/Shader.h"
 
 #include "Core/FileDialog.h"
 
@@ -29,9 +30,21 @@ static Scope<Program> sProgram;
 static Scope<Program> sEvaporate;
 static Scope<Program> sDifiuse;
 static Scope<Program> sFood;
+//Drawing
+static Ref<Shader> sPostProces;
+
 //Uniform Buffer
 static Scope<Buffer> sParamsBuffer;
 static Scope<Buffer> sSpeciesBuffer;
+
+struct Gradient
+{
+	vec3 Low;
+	vec3 High;
+	std::string name;
+};
+
+static Gradient gradients[12];
 
 enum class ESpawnMetod : int
 {
@@ -102,6 +115,57 @@ float DegreesToRadian(float angle)
 	return (angle * 3.1415f / 180.f);
 }
 
+static void InitGradients()
+{
+	gradients[0].Low  = vec3(0.972, 0.607, 0.160);
+	gradients[0].High = vec3(1.000, 0.058, 0.482);
+	gradients[0].name = "gradient 1";
+
+	gradients[1].Low  = vec3(0.894, 0.654, 0.772);
+	gradients[1].High = vec3(0.427, 0.317, 0.647);
+	gradients[1].name = "gradient 2";
+
+	gradients[2].Low  = vec3(0.909, 0.109, 1.000);
+	gradients[2].High = vec3(0.250, 0.788, 1.000);
+	gradients[2].name = "gradient 3";
+
+	gradients[3].Low  = vec3(0.000, 1.000, 0.529);
+	gradients[3].High = vec3(0.376, 0.937, 1.000);
+	gradients[3].name = "gradient 4";
+
+	gradients[4].Low  = vec3(1.000, 0.105, 0.419);
+	gradients[4].High = vec3(0.270, 0.792, 1.000);
+	gradients[4].name = "gradient 5";
+
+	gradients[5].Low  = vec3(0.078, 0.321, 0.466);
+	gradients[5].High = vec3(0.513, 0.815, 0.796);
+	gradients[5].name = "gradient 6";
+
+	gradients[6].Low  = vec3(0.709, 0.776, 0.878);
+	gradients[6].High = vec3(0.921, 0.956, 0.960);
+	gradients[6].name = "gradient 7";
+
+	gradients[7].Low  = vec3(0.901, 0.137, 0.078);
+	gradients[7].High = vec3(0.945, 0.619, 0.094);
+	gradients[7].name = "gradient 8";
+
+	gradients[8].Low  = vec3(0.741, 0.654, 0.203);
+	gradients[8].High = vec3(0.968, 0.949, 0.670);
+	gradients[8].name = "gradient 9";
+
+	gradients[9].Low  = vec3(0.007, 0.011, 0.266);
+	gradients[9].High = vec3(0.156, 0.721, 0.835);
+	gradients[9].name = "gradient 10";
+
+	gradients[10].Low  = vec3(0.231, 0.341, 0.000);
+	gradients[10].High = vec3(0.784, 1.000, 0.321);
+	gradients[10].name = "gradient 11";
+
+	gradients[11].Low = vec3(0, 0, 0);
+	gradients[11].High = vec3(1, 1, 1);
+	gradients[11].name = "Custom";
+}
+
 Simulation::Simulation(const ApplicationSpecification& spec)
 	:Application(spec)
 {
@@ -119,7 +183,6 @@ Simulation::Simulation(const ApplicationSpecification& spec)
 
 	stbi_ldr_to_hdr_gamma(1.f);
 	stbi_set_flip_vertically_on_load(1);
-	//PixelBuffer = stbi_loadf("map.png", &width, &height, &BPP, 4);
 
 	sImage = CreateRef<Image>(sParameters.Width, sParameters.Height, 0);
 	sImageDisplay = CreateRef<Image>(sParameters.Width, sParameters.Height, 1);
@@ -134,13 +197,25 @@ Simulation::Simulation(const ApplicationSpecification& spec)
 	sSpeciesBuffer = CreateScope<Buffer>(sizeof(sSpecies), 2);
 	sSpeciesBuffer->SetData(&sSpecies, sizeof(sSpecies));
 
+	sPostProces = CreateRef<Shader>("src\\Shaders\\vertex.glsl", "src\\Shaders\\fragment.glsl");
+	sPostProces->Bind();
+	sPostProces->SetUniform1i("GrayScale", 1.f);
+	sPostProces->SetUniform3f("Mask", 1.f, 1.f, 1.f);
+	sPostProces->SetUniform1f("ActiveSpices", 3.f);
+	sPostProces->SetUniform3f("ColorLow", m_ColorLow);
+	sPostProces->SetUniform3f("ColorHigh", m_ColorHigh);
+
 	InitSimulation(nullptr);
+	InitGradients();
 
 	//stbi_image_free(PixelBuffer);
 
 	Renderer::Resize(spec.Width, spec.Height);
 
 	m_Timer = CreateScope<Timer>();
+
+	//ImGui::SetUp
+	ImGui::SetColorEditOptions(ImGuiColorEditFlags_PickerHueWheel);
 }
 
 void Simulation::OnEvent(Event& e)
@@ -199,7 +274,10 @@ void Simulation::OnUpdate(float DeltaTime)
 void Simulation::OnRender()
 {
 	static bool bGrayScale = true;
-	Renderer::DisplayImage(sImage, ImageMask, bGrayScale, ActiveSpecies);
+
+	Renderer::DisplayImage(sImage, sPostProces);
+	sPostProces->SetUniform1f("ActiveSpices", ActiveSpecies);
+
 
 	ImGui::Begin("Controls");
 
@@ -340,20 +418,6 @@ void Simulation::OnRender()
 			bNextFrame = true;
 		}
 
-		ImGui::Checkbox("Gradient", &bGrayScale);
-		static bool r = true, g = true, b = true;
-		if (!bGrayScale)
-		{
-			ImGui::Text("Slime msak");
-			ImGui::Checkbox("Species 1", &r);
-			ImGui::Checkbox("Species 2", &g);
-			ImGui::Checkbox("Species 3", &b);
-			ImageMask = vec3(r, g, b);
-		}
-
-		static vec3 color;
-		ImGui::ColorEdit3("SlimeColor", &color.r);
-
 		if (ImGui::Button("Save image"))
 		{
 			std::string path = FileDialog::SaveFile("Image (*.bmp)\0*.bmp\0");
@@ -370,6 +434,66 @@ void Simulation::OnRender()
 			}
 
 		}
+
+		if (ImGui::Checkbox("Gradient", &bGrayScale))
+		{
+			sPostProces->SetUniform1i("GrayScale", bGrayScale);
+		}
+
+		static bool r = true, g = true, b = true;
+		if (!bGrayScale)
+		{
+			ImGui::Text("Slime msak");
+			ImGui::Checkbox("Species 1", &r);
+			ImGui::Checkbox("Species 2", &g);
+			ImGui::Checkbox("Species 3", &b);
+			sPostProces->SetUniform3f("Mask", r, g, b);
+		}
+		else
+		{
+			ImGui::PushItemWidth(160);
+			static int CurentGradient = 0;
+			std::string CurentName = gradients[CurentGradient].name;
+			if (ImGui::BeginCombo("combo 1", CurentName.c_str()))
+			{
+				for (int n = 0; n < 12; n++)
+				{
+					const bool bSelected = (CurentGradient == n);
+					std::string name = gradients[n].name;
+
+					if (ImGui::Selectable(name.c_str(), bSelected))
+					{
+						CurentGradient = n;
+						m_ColorLow = gradients[n].Low;
+						m_ColorHigh = gradients[n].High;
+						sPostProces->SetUniform3f("ColorLow", m_ColorLow);
+						sPostProces->SetUniform3f("ColorHigh", m_ColorHigh);
+					}
+
+					if (bSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::ColorEdit3("Low Intensity", &m_ColorLow.r))
+			{
+				CurentGradient = 11;
+				gradients[CurentGradient].Low = m_ColorLow;
+				gradients[CurentGradient].High = m_ColorHigh;
+				sPostProces->SetUniform3f("ColorLow", m_ColorLow);
+			}
+			if (ImGui::ColorEdit3("High Intensity", &m_ColorHigh.r))
+			{
+				CurentGradient = 11;
+				gradients[CurentGradient].Low = m_ColorLow;
+				gradients[CurentGradient].High = m_ColorHigh;
+				sPostProces->SetUniform3f("ColorHigh", m_ColorHigh);
+			}
+
+			ImGui::PopItemWidth();
+		}
+
 
 		ImGui::TreePop();
 	}
@@ -460,7 +584,7 @@ void Simulation::ParseImage(float* EnvironmentData)
 
 void Simulation::InitAgents()
 {
-	const float R = std::min(sImage->GetWidth(), sImage->GetHeight()) / 2.f;
+	const float R = std::min(sImage->GetWidth(), sImage->GetHeight()) / 6.f;
 
 	Agent* agents = new Agent[AgentsSize];
 

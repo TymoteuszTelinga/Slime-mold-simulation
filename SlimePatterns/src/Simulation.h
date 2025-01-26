@@ -42,7 +42,7 @@ private:
 	float m_DifiuseTime = 0.0f;
 	float m_EvaporateTime = 0.0f;
 
-	vec3 ImageMask = vec3(1.f);
-
+	vec3 m_ColorLow  = vec3(0.231, 0.341, 0.000);
+	vec3 m_ColorHigh = vec3(0.784, 1.000, 0.321);
 };
 

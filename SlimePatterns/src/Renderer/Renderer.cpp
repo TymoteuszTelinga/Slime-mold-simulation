@@ -107,3 +107,25 @@ void Renderer::DisplayImage(const Ref<Image> image, const vec3& mask, bool useGr
 	s_Data.QuadVertexArray->Bind();
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
+
+void Renderer::DisplayImage(const Ref<Image>& image, const Ref<Shader>& shader)
+{
+	image->Bind(0);
+	float ImageRatio = (float)image->GetWidth() / (float)image->GetHeight();
+
+	float xScale = 1.0f;
+	float yScale = 1.0f;
+	if (ImageRatio > s_Data.DisplayRatio)
+	{
+		yScale = s_Data.DisplayRatio / ImageRatio;
+	}
+	else {
+		xScale = ImageRatio / s_Data.DisplayRatio;
+	}
+
+	shader->Bind();
+	shader->SetUniform2f("Scale", xScale, yScale);
+
+	s_Data.QuadVertexArray->Bind();
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}

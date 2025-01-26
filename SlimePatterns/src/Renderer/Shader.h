@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include "Core/Base.h"
 
 class Shader
 {
@@ -18,6 +19,7 @@ public:
     void SetUniform1f(const std::string& name, float v0);
     void SetUniform2f(const std::string& name, float v0, float v1);
     void SetUniform3f(const std::string& name, float v0, float v1, float v2);
+    void SetUniform3f(const std::string& name, const vec3& v);
     void SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3);
 private:
     int GetUniformLocation(const std::string& name);
