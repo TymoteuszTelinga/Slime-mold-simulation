@@ -20,6 +20,8 @@ layout(std430, binding = 0) buffer bAgent
 //General Parameters
 layout(std140, binding = 1) buffer Parameters
 {
+    vec4 ActiveSpeciesMask;
+    int RandSeed;
     float TimeStep;
     int Width;
     int Height;
@@ -78,7 +80,7 @@ float sense(in Agent agent, in SpeciesSettings settings, float sensorAngleOffset
         for (int yoff = -settings.SensorSize; yoff <= settings.SensorSize; yoff++)
         {
             ivec2 offset = ivec2(xoff, yoff);
-            sum += dot(senseWeight, imageLoad(Texture, sensorPos + offset));
+            sum += dot(senseWeight, imageLoad(Texture, sensorPos + offset) );
         }
     }
 
@@ -89,7 +91,7 @@ float sense(in Agent agent, in SpeciesSettings settings, float sensorAngleOffset
 void main()
 {
     uint id = gl_GlobalInvocationID.x;
-    rngSeed = id;
+    rngSeed = id + RandSeed;
     if (id >= Agents)
     {
         return;

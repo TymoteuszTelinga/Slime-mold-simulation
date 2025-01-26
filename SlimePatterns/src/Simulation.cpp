@@ -68,6 +68,8 @@ static SpeciesSettings sSpecies[3];
 
 struct SimulationParameters
 {
+	vec4 ActiveSpeciesMask = vec4(1.f);
+	int RandSeed = 0;
 	float TimeStep = 1.f;
 	int32_t Width = 400;
 	int32_t Height = 400;
@@ -166,6 +168,8 @@ void Simulation::OnUpdate(float DeltaTime)
 	bNextFrame = false;
 
 	//sParameters.TimeStep = DeltaTime;
+	sParameters.RandSeed++;
+	sParamsBuffer->SetData(&sParameters.RandSeed, sizeof(int), sizeof(vec4));
 	//sParamsBuffer->SetData(&sParameters, sizeof(SimulationParameters));
 
 	
@@ -195,7 +199,7 @@ void Simulation::OnUpdate(float DeltaTime)
 void Simulation::OnRender()
 {
 	static bool bGrayScale = true;
-	Renderer::DisplayImage(sImage, ImageMask, bGrayScale);
+	Renderer::DisplayImage(sImage, ImageMask, bGrayScale, ActiveSpecies);
 
 	ImGui::Begin("Controls");
 
@@ -265,6 +269,7 @@ void Simulation::OnRender()
 		{
 			AgentsSize = NumberOfAgents;
 			ActiveSpecies = sNumberOfSpecies;
+			sParameters.ActiveSpeciesMask = vec4(1.f, ActiveSpecies >= 2 ? 1 : 0, ActiveSpecies >= 3 ? 1 : 0, 0.f);
 			sParameters.Width = ImageWidth;
 			sParameters.Height = ImageHeight;
 			m_EnvironmentPath = "";
@@ -335,7 +340,7 @@ void Simulation::OnRender()
 			bNextFrame = true;
 		}
 
-		ImGui::Checkbox("GrayScale", &bGrayScale);
+		ImGui::Checkbox("Gradient", &bGrayScale);
 		static bool r = true, g = true, b = true;
 		if (!bGrayScale)
 		{
@@ -355,6 +360,13 @@ void Simulation::OnRender()
 			if (!path.empty())
 			{
 				Image::SaveImage(*sImage.get(), path);
+				//float* Pixels = new float[ sImage->GetWidth() * sImage->GetHeight() * 4];
+
+				//glBindTexture(GL_TEXTURE_2D, sImage->GetRendererID());
+				//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, Pixels);
+				//stbi_write_hdr(path.c_str(), sImage->GetWidth(), sImage->GetHeight(), 4, Pixels);
+
+				//delete[] Pixels;
 			}
 
 		}
@@ -452,9 +464,9 @@ void Simulation::InitAgents()
 
 	Agent* agents = new Agent[AgentsSize];
 
-	if (!ValidPositions.empty())
+	if (ValidPositions.empty())
 	{
-		sSpawnMetod = ESpawnMetod::Custom;
+		sSpawnMetod = ESpawnMetod::Circle;
 	}
 
 	for (uint32_t i = 0; i < AgentsSize; i++)

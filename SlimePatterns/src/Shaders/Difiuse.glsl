@@ -6,6 +6,8 @@ layout(rgba32f, binding = 2) uniform image2D Environment;
 
 layout(std140, binding = 1) buffer Parameters
 {
+    vec4 ActiveSpeciesMask;
+    int RandSeed;
     float TimeStep;
     int Width;
     int Height;
@@ -45,7 +47,7 @@ void main()
     vec4 pheromons = mix(normal, blureResult, DifiusonFactor * TimeStep);
 
     float food = imageLoad(Environment, id).g;
-    pheromons += vec4(10.f) * food;
+    pheromons += vec4(10.f) * food;//* ActiveSpeciesMask
 
     imageStore(resoult, id, pheromons);
 }

@@ -84,7 +84,7 @@ void Renderer::Clear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::DisplayImage(const Ref<Image> image, const vec3& mask, bool useGrayScale)
+void Renderer::DisplayImage(const Ref<Image> image, const vec3& mask, bool useGrayScale, int32_t activeSpices)
 {
 	image->Bind(0);
 	float ImageRatio = (float)image->GetWidth() / (float)image->GetHeight();
@@ -103,6 +103,7 @@ void Renderer::DisplayImage(const Ref<Image> image, const vec3& mask, bool useGr
 	ScreenShder->SetUniform1i("GrayScale", useGrayScale);
 	ScreenShder->SetUniform2f("Scale", xScale, yScale);
 	ScreenShder->SetUniform3f("Mask", mask.r, mask.g, mask.b);
+	ScreenShder->SetUniform1f("ActiveSpices", activeSpices);
 	s_Data.QuadVertexArray->Bind();
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
