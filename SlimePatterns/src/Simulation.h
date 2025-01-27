@@ -44,5 +44,8 @@ private:
 
 	vec3 m_ColorLow  = vec3(0.231, 0.341, 0.000);
 	vec3 m_ColorHigh = vec3(0.784, 1.000, 0.321);
+
+	uint32_t m_ImageWidth;
+	uint32_t m_ImageHeight;
 };
 

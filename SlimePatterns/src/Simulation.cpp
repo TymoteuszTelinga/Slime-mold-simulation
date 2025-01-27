@@ -32,7 +32,6 @@ static Scope<Program> sDifiuse;
 static Scope<Program> sFood;
 //Drawing
 static Ref<Shader> sPostProces;
-
 //Uniform Buffer
 static Scope<Buffer> sParamsBuffer;
 static Scope<Buffer> sSpeciesBuffer;
@@ -188,21 +187,12 @@ Simulation::Simulation(const ApplicationSpecification& spec)
 	:Application(spec)
 {
 	bVsync = GetWindow().IsVSync();
-
-	//sParameters.Width = spec.Width/2;
-	//sParameters.Height = spec.Height/2;
-
-	//4k
-	/*sParameters.Width = 3840;
-	sParameters.Height = 2160;*/
-
-	//float* PixelBuffer = nullptr;
-	//int32_t width, height, BPP;
-
 	stbi_ldr_to_hdr_gamma(1.f);
 	stbi_set_flip_vertically_on_load(1);
 
 	sImage = CreateRef<Image>(sParameters.Width, sParameters.Height, 0);
+	m_ImageWidth = sParameters.Width;
+	m_ImageHeight = sParameters.Height;
 	sImageDisplay = CreateRef<Image>(sParameters.Width, sParameters.Height, 1);
 	sImageBoundry = CreateRef<Image>(sParameters.Width, sParameters.Height, 2);
 	sImageBoundry->Bind(1);
@@ -224,15 +214,13 @@ Simulation::Simulation(const ApplicationSpecification& spec)
 	sPostProces->SetUniform3f("ColorHigh", m_ColorHigh);
 
 	InitSimulation(nullptr);
-	InitGradients();
-
-	//stbi_image_free(PixelBuffer);
 
 	Renderer::Resize(spec.Width, spec.Height);
 
 	m_Timer = CreateScope<Timer>();
 
-	//ImGui::SetUp
+	//Style setup
+	InitGradients();
 	ImGui::SetColorEditOptions(ImGuiColorEditFlags_PickerHueWheel);
 }
 
@@ -263,18 +251,12 @@ void Simulation::OnUpdate(float DeltaTime)
 	//sParameters.TimeStep = DeltaTime;
 	sParameters.RandSeed++;
 	sParamsBuffer->SetData(&sParameters.RandSeed, sizeof(int), sizeof(vec4));
-	//sParamsBuffer->SetData(&sParameters, sizeof(SimulationParameters));
 
-	
 	//Agents update
 	m_Timer->Clear();
 	sProgram->Bind();
 	sProgram->Dispatch(AgentsSize / 64, 1);
 	m_AgentTime = m_Timer->ElapsedMiliseconds();
-	//FoodFeromons
-	//sFood->Bind();
-	//sFood->Dispatch(1, 1);
-	//m_Timer->Clear();
 	//Difiusion
 	sDifiuse->Bind();
 	sDifiuse->Dispatch(sImage->GetWidth() / 8 + 1, sImage->GetHeight() / 8 + 1);
@@ -296,7 +278,6 @@ void Simulation::OnRender()
 	Renderer::DisplayImage(sImage, sPostProces);
 	sPostProces->SetUniform1f("ActiveSpices", ActiveSpecies);
 
-
 	ImGui::Begin("Controls");
 
 	if (ImGui::TreeNode("Rendering"))
@@ -316,6 +297,11 @@ void Simulation::OnRender()
 
 	if (ImGui::TreeNode("Simulation parameters"))
 	{
+		ImGui::Text("Simulation space: %dx%d", sParameters.Width, sParameters.Height);
+		ImGui::Text("Agents: %d", AgentsSize);
+		ImGui::Text("Species: %d", ActiveSpecies);
+		ImGui::Text("Enviroment: %s", m_EnvironmentPath.empty() ? "None" : m_EnvironmentPath.c_str());
+
 
 		ImGui::PushItemWidth(70);
 
@@ -328,48 +314,55 @@ void Simulation::OnRender()
 				float* PixelBuffer = nullptr;
 				m_EnvironmentPath = path;
 				PixelBuffer = stbi_loadf(m_EnvironmentPath.c_str(), &width, &height, &BPP, 4);
-				sParameters.Width = width;
-				sParameters.Height = height;
+				m_ImageWidth = sParameters.Width = width;
+				m_ImageHeight = sParameters.Height = height;
 
 				InitSimulation(PixelBuffer);
 
 				stbi_image_free(PixelBuffer);
-
 			}
 		}
 
-		ImGui::Text("Simulation space: %dx%d", sImage->GetWidth(), sImage->GetHeight());
-		ImGui::Text("Agents: %d", AgentsSize);
-		ImGui::Text("Species: %d", ActiveSpecies);
-		static uint32_t ImageWidth = sImage->GetWidth();
-		static uint32_t ImageHeight = sImage->GetHeight();
-		ImGui::DragScalar("##Width", ImGuiDataType_U32, &ImageWidth);
 		ImGui::SameLine();
-		ImGui::DragScalar("Size", ImGuiDataType_U32, &ImageHeight);
+		if (ImGui::Button("Clear"))
+		{
+			m_EnvironmentPath.clear();
+			InitSimulation(nullptr);
+		}
+
+		ImGui::DragScalar("##Width", ImGuiDataType_U32, &m_ImageWidth);
+		ImGui::SameLine();
+		ImGui::DragScalar("Size", ImGuiDataType_U32, &m_ImageHeight);
 
 		ImGui::DragScalar("Agents", ImGuiDataType_U32, &NumberOfAgents, 1000);
 		ImGui::DragInt("Species", &sNumberOfSpecies, 0.2, 1, 3);
 
-		static int CurentMetod = static_cast<int>(sSpawnMetod);
-		if (ValidPositions.empty())
-		{
-			CurentMetod = static_cast<int>(ESpawnMetod::Circle);
-		}
+		int CurentMetod = static_cast<int>(sSpawnMetod);
 		if (ImGui::Combo("Spawn metod", &CurentMetod, "Circle\0Full\0Custom\0\0"))
 		{
 			sSpawnMetod = static_cast<ESpawnMetod>(CurentMetod);
 		}
-
 
 		if (ImGui::Button("Apply"))
 		{
 			AgentsSize = NumberOfAgents;
 			ActiveSpecies = sNumberOfSpecies;
 			sParameters.ActiveSpeciesMask = vec4(1.f, ActiveSpecies >= 2 ? 1 : 0, ActiveSpecies >= 3 ? 1 : 0, 0.f);
-			sParameters.Width = ImageWidth;
-			sParameters.Height = ImageHeight;
-			m_EnvironmentPath = "";
-			InitSimulation(nullptr);
+			if (sParameters.Width != m_ImageWidth || sParameters.Height != m_ImageHeight)
+			{
+				sParameters.Width = m_ImageWidth;
+				sParameters.Height = m_ImageHeight;
+				m_EnvironmentPath = "";
+				InitSimulation(nullptr);
+			}
+			else
+			{
+				int32_t width, height, BPP;
+				float* PixelBuffer = nullptr;
+				PixelBuffer = stbi_loadf(m_EnvironmentPath.c_str(), &width, &height, &BPP, 4);
+				InitSimulation(PixelBuffer);
+				stbi_image_free(PixelBuffer);
+			}
 		}
 
 		ImGui::Separator();
@@ -423,7 +416,22 @@ void Simulation::OnRender()
 	{
 		if (ImGui::Button("Reset"))
 		{
-			InitSimulation(nullptr);
+			if (!m_EnvironmentPath.empty())
+			{
+				int32_t width, height, BPP;
+				float* PixelBuffer = nullptr;
+				PixelBuffer = stbi_loadf(m_EnvironmentPath.c_str(), &width, &height, &BPP, 4);
+				sParameters.Width = width;
+				sParameters.Height = height;
+
+				InitSimulation(PixelBuffer);
+
+				stbi_image_free(PixelBuffer);
+			}
+			else
+			{
+				InitSimulation(nullptr);
+			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button(bPouse ? "Start" : "Stop"))
@@ -442,13 +450,6 @@ void Simulation::OnRender()
 			if (!path.empty())
 			{
 				Image::SaveImage(*sImage.get(), path);
-				//float* Pixels = new float[ sImage->GetWidth() * sImage->GetHeight() * 4];
-
-				//glBindTexture(GL_TEXTURE_2D, sImage->GetRendererID());
-				//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, Pixels);
-				//stbi_write_hdr(path.c_str(), sImage->GetWidth(), sImage->GetHeight(), 4, Pixels);
-
-				//delete[] Pixels;
 			}
 
 		}
@@ -462,15 +463,19 @@ void Simulation::OnRender()
 		if (!bGrayScale)
 		{
 			ImGui::Text("Slime msak");
-			ImGui::Checkbox("Species 1", &r);
-			ImGui::Checkbox("Species 2", &g);
-			ImGui::Checkbox("Species 3", &b);
-			sPostProces->SetUniform3f("Mask", r, g, b);
+			bool maskChange = false;
+			maskChange |= ImGui::Checkbox("Species 1", &r);
+			maskChange |= ImGui::Checkbox("Species 2", &g);
+			maskChange |= ImGui::Checkbox("Species 3", &b);
+			if (maskChange)
+			{
+				sPostProces->SetUniform3f("Mask", r, g, b);
+			}
 		}
 		else
 		{
 			ImGui::PushItemWidth(160);
-			static int CurentGradient = 0;
+			static int CurentGradient = 10;
 			std::string CurentName = gradients[CurentGradient].name;
 			if (ImGui::BeginCombo("Color", CurentName.c_str()))
 			{
@@ -512,12 +517,10 @@ void Simulation::OnRender()
 			ImGui::PopItemWidth();
 		}
 
-
 		ImGui::TreePop();
 	}
 	
 	ImGui::End();
-
 }
 
 void Simulation::InitSimulation(float* EnvironmentData)
@@ -548,7 +551,10 @@ void Simulation::ParseImage(float* EnvironmentData)
 	ValidPositions.clear();
 	if (EnvironmentData == nullptr)
 	{
-		sSpawnMetod = ESpawnMetod::Circle;
+		if (sSpawnMetod == ESpawnMetod::Custom)
+		{
+			sSpawnMetod = ESpawnMetod::Circle;
+		}
 		return;
 	}
 
@@ -594,9 +600,14 @@ void Simulation::ParseImage(float* EnvironmentData)
 	}
 
 	std::sort(ValidPositions.begin(), ValidPositions.end(), ComperPositions);
+
 	if (ValidPositions.size() <= 0)
 	{
 		sSpawnMetod = ESpawnMetod::Circle;
+	}
+	else
+	{
+		sSpawnMetod = ESpawnMetod::Custom;
 	}
 }
 
@@ -605,11 +616,6 @@ void Simulation::InitAgents()
 	const float R = std::min(sImage->GetWidth(), sImage->GetHeight()) / 6.f;
 
 	Agent* agents = new Agent[AgentsSize];
-
-	if (ValidPositions.empty())
-	{
-		sSpawnMetod = ESpawnMetod::Circle;
-	}
 
 	for (uint32_t i = 0; i < AgentsSize; i++)
 	{
@@ -629,6 +635,7 @@ void Simulation::InitAgents()
 			agents[i].SpeciesIndex = 2;
 			break;
 		}
+		agents[i].a = 0;
 
 		//SetUp agent positions
 		switch (sSpawnMetod)
@@ -673,11 +680,6 @@ void Simulation::InitAgents()
 			break;
 		}
 
-
-		//agents[i].r = 1;
-		//agents[i].g = 1;
-		//agents[i].b = 1;
-		agents[i].a = 0;
 	}
 
 	sBuffer = CreateScope<Buffer>(sizeof(Agent) * AgentsSize, 0);

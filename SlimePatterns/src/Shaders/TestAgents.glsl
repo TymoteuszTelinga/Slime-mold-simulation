@@ -170,7 +170,7 @@ void main()
     agents[id] = agent;
 
     vec4 old = imageLoad(Texture, ivec2(agents[id].pos));
-    vec4 deposit = min(vec4(1.f), old + vec4(agent.mask) * settings.Deposit * TimeStep);
-    //vec4 deposit = old + vec4(agent.mask) * 1.f * TimeStep;
+    //vec4 deposit = min(vec4(1.f), old + vec4(agent.mask) * settings.Deposit * TimeStep);
+    vec4 deposit = max(old, min(vec4(1.f), old + vec4(agent.mask) * settings.Deposit * TimeStep ));
     imageStore(Texture, ivec2(agents[id].pos), deposit);
 }
